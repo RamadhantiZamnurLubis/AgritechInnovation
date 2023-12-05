@@ -1,0 +1,51 @@
+#include <Servo.h>
+
+const int thermistorPin = A0;
+const int resistorValue = 10000;
+const int nominalTemperature = 25;
+const int nominalResistor = 10000;
+const float betaValue = 3950;
+
+Servo myservo;
+int pos = 0;
+
+void setup() {
+  Serial.begin(9600);
+  myservo.attach(34);
+}
+
+void loop() {
+  int rawValue = analogRead(thermistorPin);
+
+  float resistance = resistorValue / ((1023.0 / rawValue) - 1);
+  float steinhart = resistance / nominalResistor;
+  steinhart = log(steinhart);
+  steinhart /= betaValue;
+  steinhart += 1.0 / (nominalTemperature + 273.15);
+  steinhart = 1.0 / steinhart;
+  steinhart -= 273.15;
+
+  Serial.print("Suhu: ");
+  Serial.println(steinhart);
+
+  if (steinhart > 24) {
+    // Jika suhu lebih dari 24 derajat, servo berputar 360 derajat selama 15 detik
+    for (pos = 0; pos < 360; pos += 1) {
+      myservo.write(pos);
+      delay(15);
+    }
+    delay(15000); // Menunggu 15 detik
+    myservo.write(0); // Menghentikan servo
+  } else {
+    // Jika suhu kurang dari atau sama dengan 24 derajat, servo berputar -360 derajat selama 15 detik
+    for (pos = 360; pos >= 1; pos -= 1) {
+      myservo.write(pos);
+      delay(15);
+    }
+    delay(15000); // Menunggu 15 detik
+    myservo.write(0); // Menghentikan servo
+  }
+
+  // Tambahkan delay sesuai kebutuhan Anda sebelum membaca suhu lagi
+  delay(5000);
+}
